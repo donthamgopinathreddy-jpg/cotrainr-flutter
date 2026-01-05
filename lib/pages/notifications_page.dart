@@ -18,12 +18,19 @@ class _NotificationsPageState extends State<NotificationsPage> with TickerProvid
   @override
   void initState() {
     super.initState();
-    _notificationService.initialize();
+    _loadNotifications();
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
     _fadeController.forward();
+  }
+
+  Future<void> _loadNotifications() async {
+    await _notificationService.initialize();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -98,8 +105,10 @@ class _NotificationsPageState extends State<NotificationsPage> with TickerProvid
                   : RefreshIndicator(
                       onRefresh: () async {
                         HapticFeedback.mediumImpact();
-                        await Future.delayed(const Duration(milliseconds: 800));
-                        setState(() {});
+                        await _notificationService.refresh();
+                        if (mounted) {
+                          setState(() {});
+                        }
                       },
                       color: const Color(0xFF14B8A6),
                       child: ListView.builder(

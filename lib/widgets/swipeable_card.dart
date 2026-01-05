@@ -173,3 +173,26 @@ class _SwipeableCardState extends State<SwipeableCard> {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -13,7 +13,7 @@ class SensorService {
   StreamSubscription<MagnetometerEvent>? _magnetometerSubscription;
   // StreamSubscription<StepCount>? _pedometerSubscription;  // Temporarily removed
 
-  int _stepCount = 0;
+  final int _stepCount = 0;
   int get stepCount => _stepCount;
 
   Future<void> initialize() async {

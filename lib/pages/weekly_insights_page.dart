@@ -26,13 +26,14 @@ class WeeklyInsightsPage extends StatefulWidget {
   State<WeeklyInsightsPage> createState() => _WeeklyInsightsPageState();
 }
 
-class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProviderStateMixin {
+class _WeeklyInsightsPageState extends State<WeeklyInsightsPage>
+    with TickerProviderStateMixin {
   late AnimationController _ringAnimationController;
   late AnimationController _valueAnimationController;
   late AnimationController _chartAnimationController;
   int _selectedDay = DateTime.now().weekday - 1; // 0-6 for Mon-Sun
-  DateTime _selectedWeek = DateTime.now();
-  
+  final DateTime _selectedWeek = DateTime.now();
+
   @override
   void initState() {
     super.initState();
@@ -48,7 +49,7 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    
+
     _ringAnimationController.forward();
     _valueAnimationController.forward();
     _chartAnimationController.forward();
@@ -76,43 +77,63 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
     final total = widget.weeklyData.reduce((a, b) => a + b);
     final average = (total / widget.weeklyData.length).round();
     final maxValue = widget.weeklyData.reduce(math.max);
-    
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF111827) : const Color(0xFFFAFAFA),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Sticky Header (60-90px with gradient accent)
-          _buildStickyHeader(isDark),
-          
-          // Hero Metric Card
-          SliverToBoxAdapter(
-            child: _buildHeroMetricCard(progress, isDark),
-          ),
-          
-          // Calendar Strip
-          SliverToBoxAdapter(
-            child: _buildCalendarStrip(isDark),
-          ),
-          
-          // Graph Card
-          SliverToBoxAdapter(
-            child: _buildGraphCard(isDark),
-          ),
-          
-          // Breakdown Cards (Horizontal)
-          SliverToBoxAdapter(
-            child: _buildBreakdownCards(average, maxValue, isDark),
-          ),
-          
-          // Water Presets (only for water type)
-          if (widget.type == 'water')
+      backgroundColor: isDark
+          ? const Color(0xFF111827)
+          : const Color(0xFFFAFAFA),
+      body: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // Header
+            _buildHeader(isDark),
+
+            // Hero Section with Progress Ring
             SliverToBoxAdapter(
-              child: _buildWaterSection(isDark),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: _buildHeroSection(progress, isDark),
+              ),
             ),
-          
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+
+            // Calendar Strip
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildDayBreakdown(isDark),
+              ),
+            ),
+
+            // Weekly Chart
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildWeeklyChart(isDark),
+              ),
+            ),
+
+            // Summary Stats
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, left: 20, right: 20),
+                child: _buildSummaryStats(average, maxValue, isDark),
+              ),
+            ),
+
+            // Water Quick Actions (only for water type)
+            if (widget.type == 'water')
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, left: 20, right: 20),
+                  child: _buildWaterQuickActions(isDark),
+                ),
+              ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
       floatingActionButton: widget.type == 'water'
           ? FloatingActionButton(
@@ -120,75 +141,108 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
                 HapticFeedback.lightImpact();
                 _showWaterPresetsSheet(isDark);
               },
-              backgroundColor: const Color(0xFF3B82F6),
+              backgroundColor: widget.gradientColors[0],
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
     );
   }
 
-  // Sticky Header (60-90px with accent gradient)
-  Widget _buildStickyHeader(bool isDark) {
+  // Header
+  Widget _buildHeader(bool isDark) {
     return SliverAppBar(
       pinned: true,
       elevation: 0,
-      backgroundColor: isDark ? const Color(0xFF111827) : const Color(0xFFFAFAFA),
-      leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back_rounded,
-          color: isDark ? Colors.white : const Color(0xFF1F2937),
-        ),
-        onPressed: () => Navigator.pop(context),
-      ),
-      flexibleSpace: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              widget.gradientColors[0].withValues(alpha: 0.12),
-              widget.gradientColors[1].withValues(alpha: 0.08),
-              Colors.transparent,
-            ],
+      backgroundColor: isDark
+          ? const Color(0xFF111827)
+          : const Color(0xFFFAFAFA),
+      toolbarHeight: 72,
+      leading:
+          const SizedBox.shrink(), // Hide default leading, we'll add it in Stack
+      flexibleSpace: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                widget.gradientColors[0].withValues(alpha: 0.1),
+                widget.gradientColors[1].withValues(alpha: 0.05),
+                Colors.transparent,
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${widget.title} Insights',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF1F2937),
-                        ),
+                // Left: Back button
+                Positioned(
+                  left: 0,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                        size: 20,
                       ),
-                      Text(
-                        'Dec 04 - Dec 10',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-                        ),
-                      ),
-                    ],
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.calendar_today, size: 20),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    // Date picker
-                  },
-                  color: isDark ? Colors.white : const Color(0xFF1F2937),
+                // Center: Title and date
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${widget.title} Insights',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Dec 04 - Dec 10, 2024',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        color: isDark
+                            ? const Color(0xFF9CA3AF)
+                            : const Color(0xFF6B7280),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+                // Right: Calendar icon
+                Positioned(
+                  right: 0,
+                  child: IconButton(
+                    icon: const Icon(Icons.calendar_month_rounded, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      // Date picker
+                    },
+                    color: isDark ? Colors.white : const Color(0xFF1F2937),
+                  ),
                 ),
               ],
             ),
@@ -198,135 +252,470 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
     );
   }
 
-  // Hero Metric Card
-  Widget _buildHeroMetricCard(double progress, bool isDark) {
-    final trendPercent = 8.0; // vs Last Week
-    
+  // Hero Section with Progress Ring
+  Widget _buildHeroSection(double progress, bool isDark) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            widget.gradientColors[0].withValues(alpha: 0.15),
+            widget.gradientColors[1].withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: widget.gradientColors[0].withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Left: Icon and Label
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: widget.gradientColors[0].withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  widget.type == 'steps'
+                      ? Icons.directions_run_rounded
+                      : widget.icon,
+                  color: widget.gradientColors[0],
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                widget.title,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? const Color(0xFF9CA3AF)
+                      : const Color(0xFF6B7280),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          // Center: Value
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedBuilder(
+                  animation: _valueAnimationController,
+                  builder: (context, child) {
+                    final animatedValue =
+                        (widget.currentValue * _valueAnimationController.value)
+                            .round();
+                    return FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _formatValue(animatedValue),
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 36,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF1F2937),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'of ${_formatValue(widget.goal)} goal',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? const Color(0xFF9CA3AF)
+                        : const Color(0xFF6B7280),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          // Right: Progress Ring
+          SizedBox(
+            width: 70,
+            height: 70,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AnimatedBuilder(
+                  animation: _ringAnimationController,
+                  builder: (context, child) {
+                    return SizedBox(
+                      width: 70,
+                      height: 70,
+                      child: CircularProgressIndicator(
+                        value: progress * _ringAnimationController.value,
+                        strokeWidth: 7,
+                        backgroundColor: isDark
+                            ? const Color(0xFF374151)
+                            : const Color(0xFFE5E7EB),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          widget.gradientColors[0],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${(progress * 100).toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: widget.gradientColors[0],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Weekly Chart - Line Graph
+  Widget _buildWeeklyChart(bool isDark) {
+    final now = DateTime.now();
+    final weekStart = _selectedWeek.subtract(
+      Duration(days: _selectedWeek.weekday - 1),
+    );
+    final dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
             spreadRadius: 0,
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Left: Metric Name + Today Value
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    AnimatedBuilder(
-                      animation: _valueAnimationController,
-                      builder: (context, child) {
-                        final animatedValue = (widget.currentValue * _valueAnimationController.value).round();
-                        return Text(
-                          _formatValue(animatedValue),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 48,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : const Color(0xFF1F2937),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF374151)
+                      : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.show_chart_rounded,
+                  size: 18,
+                  color: isDark
+                      ? const Color(0xFF9CA3AF)
+                      : const Color(0xFF6B7280),
                 ),
               ),
-              
-              // Right: Animated Ring with Center Icon
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    AnimatedBuilder(
-                      animation: _ringAnimationController,
-                      builder: (context, child) {
-                        return SizedBox(
-                          width: 100,
-                          height: 100,
-                          child: CircularProgressIndicator(
-                            value: progress * _ringAnimationController.value,
-                            strokeWidth: 8,
-                            backgroundColor: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB),
-                            valueColor: AlwaysStoppedAnimation<Color>(widget.gradientColors[0]),
-                          ),
-                        );
-                      },
-                    ),
-                    Icon(
-                      widget.icon,
-                      color: widget.gradientColors[0],
-                      size: 32,
-                    ),
-                  ],
+              const SizedBox(width: 12),
+              Text(
+                'Weekly Overview',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : const Color(0xFF1F2937),
                 ),
               ),
             ],
           ),
-          
-          const SizedBox(height: 16),
-          
-          // Trend Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: widget.gradientColors[0].withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
+          const SizedBox(height: 20),
+          // Line Chart
+          SizedBox(
+            height: 160,
+            child: CustomPaint(
+              painter: _LineChartPainter(
+                data: widget.weeklyData,
+                selectedIndex: _selectedDay,
+                gradientColors: widget.gradientColors,
+                isDark: isDark,
+                animationValue: _chartAnimationController.value,
+              ),
+              child: GestureDetector(
+                onTapDown: (details) {
+                  final RenderBox box = context.findRenderObject() as RenderBox;
+                  final localPosition = box.globalToLocal(
+                    details.globalPosition,
+                  );
+                  final chartWidth = box.size.width;
+                  final itemWidth = chartWidth / widget.weeklyData.length;
+                  final tappedIndex = (localPosition.dx / itemWidth).floor();
+                  if (tappedIndex >= 0 &&
+                      tappedIndex < widget.weeklyData.length) {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _selectedDay = tappedIndex;
+                    });
+                  }
+                },
+                child: Container(),
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.trending_up, color: Color(0xFF10B981), size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  '+$trendPercent% vs Last Week',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: widget.gradientColors[0],
+          ),
+          const SizedBox(height: 12),
+          // Day labels
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(widget.weeklyData.length, (index) {
+              final day = weekStart.add(Duration(days: index));
+              final isSelected = _selectedDay == index;
+              final isToday =
+                  day.day == now.day &&
+                  day.month == now.month &&
+                  day.year == now.year;
+
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _selectedDay = index;
+                    });
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSelected)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: widget.gradientColors[0],
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            _formatValue(widget.weeklyData[index]),
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        )
+                      else
+                        const SizedBox(height: 19),
+                      Text(
+                        dayLabels[index],
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? widget.gradientColors[0]
+                              : (isDark
+                                    ? const Color(0xFF9CA3AF)
+                                    : const Color(0xFF6B7280)),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${day.day}',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 9,
+                          fontWeight: isToday
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isToday
+                              ? widget.gradientColors[0]
+                              : (isDark
+                                    ? const Color(0xFF9CA3AF)
+                                    : const Color(0xFF6B7280)),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              );
+            }),
           ),
         ],
       ),
     );
   }
 
-  // Calendar Strip (7 days)
-  Widget _buildCalendarStrip(bool isDark) {
+  // Summary Stats
+  Widget _buildSummaryStats(int average, int maxValue, bool isDark) {
+    final total = widget.weeklyData.reduce((a, b) => a + b);
+    final goalHit = widget.weeklyData
+        .where((value) => value >= widget.goal)
+        .length;
+
+    final stats = [
+      {
+        'label': 'Total',
+        'value': _formatValue(total),
+        'icon': Icons.calculate_rounded,
+      },
+      {
+        'label': 'Average',
+        'value': _formatValue(average),
+        'icon': Icons.equalizer_rounded,
+      },
+      {
+        'label': 'Best Day',
+        'value': _formatValue(maxValue),
+        'icon': Icons.star_rounded,
+      },
+      {
+        'label': 'Goal Hit',
+        'value': '$goalHit days',
+        'icon': Icons.check_circle_rounded,
+      },
+    ];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Summary',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : const Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              for (int i = 0; i < stats.length; i++) ...[
+                Expanded(child: _buildStatItem(stats[i], isDark)),
+                if (i < stats.length - 1) const SizedBox(width: 12),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(Map<String, dynamic> stat, bool isDark) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: widget.gradientColors[0].withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            stat['icon'] as IconData,
+            color: widget.gradientColors[0],
+            size: 18,
+          ),
+        ),
+        const SizedBox(height: 6),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            stat['value'] as String,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : const Color(0xFF1F2937),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          stat['label'] as String,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 10,
+            color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  // Calendar Strip
+  Widget _buildDayBreakdown(bool isDark) {
     final now = DateTime.now();
-    final weekStart = _selectedWeek.subtract(Duration(days: _selectedWeek.weekday - 1));
-    
+    final weekStart = _selectedWeek.subtract(
+      Duration(days: _selectedWeek.weekday - 1),
+    );
+
     return SizedBox(
-      height: 80,
+      height: 72,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -334,8 +723,11 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
         itemBuilder: (context, index) {
           final day = weekStart.add(Duration(days: index));
           final isSelected = _selectedDay == index;
-          final isToday = day.day == now.day && day.month == now.month && day.year == now.year;
-          
+          final isToday =
+              day.day == now.day &&
+              day.month == now.month &&
+              day.year == now.year;
+
           return GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
@@ -344,15 +736,15 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
               });
             },
             child: Container(
-              width: 60,
-              margin: const EdgeInsets.only(right: 8),
+              width: 56,
+              margin: EdgeInsets.only(right: index < 6 ? 12 : 0),
               decoration: BoxDecoration(
                 gradient: isSelected
-                    ? LinearGradient(
-                        colors: widget.gradientColors,
-                      )
+                    ? LinearGradient(colors: widget.gradientColors)
                     : null,
-                color: isSelected ? null : (isDark ? const Color(0xFF1F2937) : Colors.white),
+                color: isSelected
+                    ? null
+                    : (isDark ? const Color(0xFF1F2937) : Colors.white),
                 borderRadius: BorderRadius.circular(16),
                 border: isToday && !isSelected
                     ? Border.all(color: widget.gradientColors[0], width: 2)
@@ -360,9 +752,11 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: widget.gradientColors[0].withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: widget.gradientColors[0].withValues(
+                            alpha: 0.15,
+                          ),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ]
                     : null,
@@ -374,24 +768,30 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
                     ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index],
                     style: TextStyle(
                       fontFamily: 'Poppins',
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: isSelected
                           ? Colors.white
-                          : (isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280)),
+                          : (isDark
+                                ? const Color(0xFF9CA3AF)
+                                : const Color(0xFF6B7280)),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${day.day}',
                     style: TextStyle(
                       fontFamily: 'Poppins',
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: isSelected
                           ? Colors.white
                           : (isDark ? Colors.white : const Color(0xFF1F2937)),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -402,19 +802,20 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
     );
   }
 
-  // Graph Card
-  Widget _buildGraphCard(bool isDark) {
+  // Water Quick Actions
+  Widget _buildWaterQuickActions(bool isDark) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 12,
+            blurRadius: 18,
             offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
@@ -422,184 +823,22 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Weekly Overview',
+            'Quick Add',
             style: TextStyle(
               fontFamily: 'Poppins',
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.white : const Color(0xFF1F2937),
             ),
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 200,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(widget.weeklyData.length, (index) {
-                final value = widget.weeklyData[index];
-                final maxValue = widget.weeklyData.reduce(math.max);
-                final height = (value / maxValue) * 160;
-                final isSelected = _selectedDay == index;
-                
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      setState(() {
-                        _selectedDay = index;
-                      });
-                    },
-                    child: AnimatedBuilder(
-                      animation: _chartAnimationController,
-                      builder: (context, child) {
-                        final animatedHeight = height * _chartAnimationController.value;
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: isSelected
-                                  ? widget.gradientColors
-                                  : [
-                                      widget.gradientColors[0].withValues(alpha: 0.6),
-                                      widget.gradientColors[1].withValues(alpha: 0.6),
-                                    ],
-                            ),
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(8),
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: widget.gradientColors[0].withValues(alpha: 0.4),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, -4),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          height: animatedHeight,
-                        );
-                      },
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Breakdown Cards (Horizontal: BestDay, Avg, GoalHit, Streak)
-  Widget _buildBreakdownCards(int average, int maxValue, bool isDark) {
-    final breakdowns = [
-      {'label': 'Best Day', 'value': maxValue.toString(), 'icon': Icons.emoji_events},
-      {'label': 'Average', 'value': average.toString(), 'icon': Icons.calculate},
-      {'label': 'Goal Hit', 'value': '5', 'icon': Icons.check_circle},
-      {'label': 'Streak', 'value': '7', 'icon': Icons.local_fire_department},
-    ];
-    
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: breakdowns.length,
-        itemBuilder: (context, index) {
-          final item = breakdowns[index];
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              _showBreakdownDetail(item['label'] as String, isDark);
-            },
-            child: Container(
-              width: 140,
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1F2937) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    item['icon'] as IconData,
-                    color: widget.gradientColors[0],
-                    size: 24,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item['value'] as String,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : const Color(0xFF1F2937),
-                    ),
-                  ),
-                  Text(
-                    item['label'] as String,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // Water Section (only for water type)
-  Widget _buildWaterSection(bool isDark) {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1F2937) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Quick Add Water',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : const Color(0xFF1F2937),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildWaterPresetChip('250ml', 250, isDark),
-              _buildWaterPresetChip('500ml', 500, isDark),
-              _buildWaterPresetChip('750ml', 750, isDark),
-              _buildWaterPresetChip('1L', 1000, isDark),
+              _buildWaterButton('250ml', 250, isDark),
+              _buildWaterButton('500ml', 500, isDark),
+              _buildWaterButton('750ml', 750, isDark),
+              _buildWaterButton('1L', 1000, isDark),
             ],
           ),
         ],
@@ -607,28 +846,36 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
     );
   }
 
-  Widget _buildWaterPresetChip(String label, int ml, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        // Add water
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF3B82F6),
+  Widget _buildWaterButton(String label, int ml, bool isDark) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            // Add water
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: widget.gradientColors[0].withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: widget.gradientColors[0].withValues(alpha: 0.3),
+              ),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: widget.gradientColors[0],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
       ),
@@ -652,7 +899,9 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB),
+                color: isDark
+                    ? const Color(0xFF374151)
+                    : const Color(0xFFE5E7EB),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -667,14 +916,13 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
               ),
             ),
             const SizedBox(height: 20),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildWaterPresetChip('250ml', 250, isDark),
-                _buildWaterPresetChip('500ml', 500, isDark),
-                _buildWaterPresetChip('750ml', 750, isDark),
-                _buildWaterPresetChip('1L', 1000, isDark),
+                _buildWaterButton('250ml', 250, isDark),
+                _buildWaterButton('500ml', 500, isDark),
+                _buildWaterButton('750ml', 750, isDark),
+                _buildWaterButton('1L', 1000, isDark),
               ],
             ),
             const SizedBox(height: 20),
@@ -683,44 +931,125 @@ class _WeeklyInsightsPageState extends State<WeeklyInsightsPage> with TickerProv
       ),
     );
   }
+}
 
-  void _showBreakdownDetail(String label, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F2937) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : const Color(0xFF1F2937),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+// Line Chart Painter
+class _LineChartPainter extends CustomPainter {
+  final List<int> data;
+  final int selectedIndex;
+  final List<Color> gradientColors;
+  final bool isDark;
+  final double animationValue;
+
+  _LineChartPainter({
+    required this.data,
+    required this.selectedIndex,
+    required this.gradientColors,
+    required this.isDark,
+    required this.animationValue,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
+    final maxValue = data.reduce(math.max);
+    if (maxValue == 0) return;
+
+    final padding = 20.0;
+    final chartWidth = size.width - (padding * 2);
+    final chartHeight = size.height - (padding * 2);
+    final pointSpacing = chartWidth / (data.length - 1);
+
+    // Calculate points
+    final points = <Offset>[];
+    for (int i = 0; i < data.length; i++) {
+      final x = padding + (i * pointSpacing);
+      final normalizedValue = (data[i] / maxValue) * animationValue;
+      final y = size.height - padding - (normalizedValue * chartHeight);
+      points.add(Offset(x, y));
+    }
+
+    // Draw gradient area under line
+    final path = Path();
+    path.moveTo(points[0].dx, size.height - padding);
+    for (var point in points) {
+      path.lineTo(point.dx, point.dy);
+    }
+    path.lineTo(points.last.dx, size.height - padding);
+    path.close();
+
+    final gradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        gradientColors[0].withValues(alpha: 0.2),
+        gradientColors[1].withValues(alpha: 0.05),
+      ],
     );
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = gradient.createShader(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+        ),
+    );
+
+    // Draw line
+    final linePath = Path();
+    linePath.moveTo(points[0].dx, points[0].dy);
+    for (int i = 1; i < points.length; i++) {
+      final p0 = points[i - 1];
+      final p1 = points[i];
+      final cp1x = p0.dx + (p1.dx - p0.dx) / 2;
+      final cp1y = p0.dy;
+      final cp2x = p0.dx + (p1.dx - p0.dx) / 2;
+      final cp2y = p1.dy;
+      linePath.cubicTo(cp1x, cp1y, cp2x, cp2y, p1.dx, p1.dy);
+    }
+
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = gradientColors[0]
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    // Draw points
+    for (int i = 0; i < points.length; i++) {
+      final isSelected = i == selectedIndex;
+      final point = points[i];
+
+      // Outer circle
+      canvas.drawCircle(
+        point,
+        isSelected ? 8.0 : 5.0,
+        Paint()
+          ..color = isSelected
+              ? gradientColors[0]
+              : gradientColors[0].withValues(alpha: 0.6)
+          ..style = PaintingStyle.fill,
+      );
+
+      // Inner circle
+      canvas.drawCircle(
+        point,
+        isSelected ? 4.0 : 2.5,
+        Paint()
+          ..color = isDark ? const Color(0xFF1F2937) : Colors.white
+          ..style = PaintingStyle.fill,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_LineChartPainter oldDelegate) {
+    return oldDelegate.data != data ||
+        oldDelegate.selectedIndex != selectedIndex ||
+        oldDelegate.animationValue != animationValue;
   }
 }

@@ -220,7 +220,7 @@ class _RealtimeMapState extends State<RealtimeMap> {
       );
     }
 
-    return Container(
+    return SizedBox(
       height: widget.height,
       child: GoogleMap(
         initialCameraPosition: CameraPosition(
