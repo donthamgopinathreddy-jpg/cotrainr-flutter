@@ -8,14 +8,7 @@
 BEGIN;
 
 -- ============================================
--- UPDATE FOODS WITH MICRONUTRIENTS
--- ============================================
--- Adding vitamins (A, C, D, E, K, B-complex) and minerals
--- (magnesium, phosphorus, zinc, copper, manganese, selenium)
--- to micros_json field
--- ============================================
-
--- South Indian Breakfast
+-- 
 UPDATE public.foods_catalog SET micros_json = '{"vitamin_a_mcg": 0, "vitamin_c_mg": 0, "vitamin_d_mcg": 0, "vitamin_e_mg": 0.1, "vitamin_k_mcg": 0.5, "thiamine_mg": 0.2, "riboflavin_mg": 0.1, "niacin_mg": 1.5, "vitamin_b6_mg": 0.1, "folate_mcg": 20, "vitamin_b12_mcg": 0, "magnesium_mg": 15, "phosphorus_mg": 50, "zinc_mg": 0.5, "copper_mg": 0.1, "manganese_mg": 0.3, "selenium_mcg": 5}' WHERE name = 'Idli';
 UPDATE public.foods_catalog SET micros_json = '{"vitamin_a_mcg": 0, "vitamin_c_mg": 0, "vitamin_d_mcg": 0, "vitamin_e_mg": 0.2, "vitamin_k_mcg": 0.8, "thiamine_mg": 0.3, "riboflavin_mg": 0.15, "niacin_mg": 2.0, "vitamin_b6_mg": 0.15, "folate_mcg": 25, "vitamin_b12_mcg": 0, "magnesium_mg": 20, "phosphorus_mg": 60, "zinc_mg": 0.6, "copper_mg": 0.15, "manganese_mg": 0.4, "selenium_mcg": 6}' WHERE name = 'Dosa';
 UPDATE public.foods_catalog SET micros_json = '{"vitamin_a_mcg": 0, "vitamin_c_mg": 0, "vitamin_d_mcg": 0, "vitamin_e_mg": 0.3, "vitamin_k_mcg": 1.0, "thiamine_mg": 0.4, "riboflavin_mg": 0.2, "niacin_mg": 2.5, "vitamin_b6_mg": 0.2, "folate_mcg": 30, "vitamin_b12_mcg": 0, "magnesium_mg": 25, "phosphorus_mg": 70, "zinc_mg": 0.7, "copper_mg": 0.2, "manganese_mg": 0.5, "selenium_mcg": 7}' WHERE name = 'Vada';

@@ -388,49 +388,33 @@ class _LineChart extends StatelessWidget {
             height: 150,
             child: Stack(
               children: [
-                // Chart
-                CustomPaint(
-                  size: Size.infinite,
-                  painter: _LineChartPainter(
-                    data: data,
-                    maxValue: maxValue,
-                    gradientStart: gradientStart,
-                    gradientEnd: gradientEnd,
-                    selectedIndex: selectedIndex,
-                    animationValue: animationValue,
+                // Chart with smooth curves
+                ClipRect(
+                  child: CustomPaint(
+                    size: Size.infinite,
+                    painter: _LineChartPainter(
+                      data: data,
+                      maxValue: maxValue,
+                      gradientStart: gradientStart,
+                      gradientEnd: gradientEnd,
+                      selectedIndex: selectedIndex,
+                      animationValue: animationValue,
+                    ),
                   ),
                 ),
-                // Data points
+                // Interactive touch areas for data points (invisible, larger than visual points)
                 ...List.generate(data.length, (index) {
                   final x = (index / (data.length - 1)) * MediaQuery.of(context).size.width;
                   final y = 150 - ((data[index] / maxValue) * 150 * animationValue);
                   return Positioned(
-                    left: x - 12,
-                    top: y - 12,
+                    left: x - 20,
+                    top: y - 20,
                     child: GestureDetector(
                       onTap: () => onDataPointTap(index),
-                      child: AnimatedScale(
-                        scale: selectedIndex == index ? 1.3 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [gradientStart, gradientEnd],
-                            ),
-                            boxShadow: selectedIndex == index
-                                ? [
-                                    BoxShadow(
-                                      color: gradientStart.withOpacity(0.5),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                        ),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        color: Colors.transparent,
                       ),
                     ),
                   );
@@ -522,31 +506,121 @@ class _LineChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    final path = Path();
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    // Draw gradient line
+    // Calculate points
+    final points = <Offset>[];
     for (int i = 0; i < data.length; i++) {
       final x = (i / (data.length - 1)) * size.width;
       final y = size.height - ((data[i] / maxValue) * size.height * animationValue);
-
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
+      points.add(Offset(x, y));
     }
 
-    final gradient = LinearGradient(
+    // Create smooth curve path using cubic Bezier
+    final smoothPath = Path();
+    final fillPath = Path();
+
+    if (points.isNotEmpty) {
+      smoothPath.moveTo(points[0].dx, points[0].dy);
+      fillPath.moveTo(points[0].dx, size.height);
+      fillPath.lineTo(points[0].dx, points[0].dy);
+
+      for (int i = 0; i < points.length - 1; i++) {
+        final current = points[i];
+        final next = points[i + 1];
+        
+        // Calculate control points for smooth curve
+        final controlPoint1 = Offset(
+          current.dx + (next.dx - current.dx) / 3,
+          current.dy,
+        );
+        final controlPoint2 = Offset(
+          next.dx - (next.dx - current.dx) / 3,
+          next.dy,
+        );
+
+        smoothPath.cubicTo(
+          controlPoint1.dx,
+          controlPoint1.dy,
+          controlPoint2.dx,
+          controlPoint2.dy,
+          next.dx,
+          next.dy,
+        );
+        
+        fillPath.cubicTo(
+          controlPoint1.dx,
+          controlPoint1.dy,
+          controlPoint2.dx,
+          controlPoint2.dy,
+          next.dx,
+          next.dy,
+        );
+      }
+
+      // Close the fill path
+      fillPath.lineTo(points.last.dx, size.height);
+      fillPath.close();
+    }
+
+    // Draw gradient fill area under the curve
+    final fillGradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        gradientStart.withValues(alpha: 0.15),
+        gradientEnd.withValues(alpha: 0.05),
+        Colors.transparent,
+      ],
+      stops: const [0.0, 0.5, 1.0],
+    );
+    final fillPaint = Paint()
+      ..shader = fillGradient.createShader(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+      )
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(fillPath, fillPaint);
+
+    // Draw smooth gradient line
+    final lineGradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
       colors: [gradientStart, gradientEnd],
     );
-    paint.shader = gradient.createShader(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-    );
-    canvas.drawPath(path, paint);
+    final linePaint = Paint()
+      ..shader = lineGradient.createShader(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(smoothPath, linePaint);
+
+    // Draw data points with glow effect
+    for (int i = 0; i < points.length; i++) {
+      final point = points[i];
+      final isSelected = selectedIndex == i;
+      
+      // Outer glow
+      if (isSelected) {
+        final glowPaint = Paint()
+          ..color = gradientStart.withValues(alpha: 0.3)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+        canvas.drawCircle(point, 12, glowPaint);
+      }
+
+      // Inner point
+      final pointPaint = Paint()
+        ..color = isSelected ? Colors.white : gradientStart
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(point, isSelected ? 6 : 4, pointPaint);
+
+      // Outer ring
+      final ringPaint = Paint()
+        ..color = gradientStart
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+      canvas.drawCircle(point, isSelected ? 8 : 5, ringPaint);
+    }
   }
 
   @override
@@ -622,29 +696,54 @@ class _BarChart extends StatelessWidget {
                 return GestureDetector(
                   onTap: () => onDataPointTap(index),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
+                    duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutCubic,
                     width: (MediaQuery.of(context).size.width - 64) / data.length - 4,
-                    height: height,
+                    height: height > 0 ? height : 2,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
-                        colors: [gradientStart, gradientEnd],
+                        colors: [
+                          gradientStart,
+                          gradientEnd,
+                          gradientEnd.withValues(alpha: 0.8),
+                        ],
+                        stops: const [0.0, 0.7, 1.0],
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                        bottomLeft: Radius.circular(4),
+                        bottomRight: Radius.circular(4),
+                      ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: gradientStart.withOpacity(0.5),
+                                color: gradientStart.withValues(alpha: 0.6),
+                                blurRadius: 16,
+                                spreadRadius: 3,
+                                offset: const Offset(0, -2),
+                              ),
+                              BoxShadow(
+                                color: gradientEnd.withValues(alpha: 0.4),
                                 blurRadius: 12,
                                 spreadRadius: 2,
+                                offset: const Offset(0, 4),
                               ),
                             ]
-                          : null,
+                          : [
+                              BoxShadow(
+                                color: gradientStart.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                     transform: Matrix4.identity()
-                      ..scale(isSelected ? 1.05 : 1.0),
+                      ..scale(isSelected ? 1.08 : 1.0)
+                      ..translate(0.0, isSelected ? -4.0 : 0.0),
                   ),
                 );
               }),

@@ -138,7 +138,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -247,12 +246,19 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
               ? const Color(0xFFF59E0B).withValues(alpha: 0.1)
               : (isDark ? const Color(0xFF1F2937) : Colors.white),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isMe
-                ? const Color(0xFFF59E0B)
-                : (isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB)),
-            width: isMe ? 2 : 1,
-          ),
+          gradient: !isDark && !isMe
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    Colors.white,
+                    const Color(0xFFFFF8E1).withValues(alpha: 0.3), // Very light yellow
+                    const Color(0xFFFFE0B2).withValues(alpha: 0.2), // Very light orange
+                  ],
+                  stops: const [0.0, 0.5, 0.7, 1.0],
+                )
+              : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
@@ -286,10 +292,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: isTopThree ? const Color(0xFFF59E0B) : Colors.transparent,
-                  width: 2,
-                ),
                 image: DecorationImage(
                   image: NetworkImage(item['avatar'] as String),
                   fit: BoxFit.cover,
@@ -406,9 +408,18 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB),
-        ),
+        gradient: !isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  const Color(0xFFFFF8E1).withValues(alpha: 0.3), // Very light yellow
+                  const Color(0xFFFFE0B2).withValues(alpha: 0.2), // Very light orange
+                ],
+                stops: const [0.0, 0.6, 1.0],
+              )
+            : null,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -494,6 +505,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     );
   }
 }
+
+
 
 
 

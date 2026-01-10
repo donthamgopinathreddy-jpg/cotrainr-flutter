@@ -45,54 +45,5 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	
-	<!-- HealthKit Permissions -->
-	<key>NSHealthShareUsageDescription</key>
-	<string>CoTrainr needs access to your health data to track your fitness progress, steps, heart rate, and workouts.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>CoTrainr needs permission to write health data like water intake and workouts to your Health app.</string>
-	
-	<!-- Location Permissions -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>CoTrainr needs your location to find nearby fitness centers and trainers.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>CoTrainr needs your location to track workouts and find nearby fitness centers.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>CoTrainr needs your location to track workouts in the background.</string>
-	
-	<!-- Camera Permissions -->
-	<key>NSCameraUsageDescription</key>
-	<string>CoTrainr needs camera access to take photos for meal tracking and progress photos.</string>
-	
-	<!-- Photo Library Permissions -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>CoTrainr needs access to your photos to select images for meal tracking and profile pictures.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>CoTrainr needs permission to save photos to your library.</string>
-	
-	<!-- Microphone Permissions -->
-	<key>NSMicrophoneUsageDescription</key>
-	<string>CoTrainr needs microphone access for video sessions and voice messages.</string>
-	
-	<!-- Contacts Permissions -->
-	<key>NSContactsUsageDescription</key>
-	<string>CoTrainr needs access to your contacts to help you connect with friends on the platform.</string>
-	
-	<!-- Motion & Fitness -->
-	<key>NSMotionUsageDescription</key>
-	<string>CoTrainr needs access to motion and fitness data to track your steps and activity.</string>
-	
-	<!-- Google Maps API Key -->
-	<!-- TODO: Replace YOUR_GOOGLE_MAPS_API_KEY with your actual API key from Google Cloud Console -->
-	<key>GMSApiKey</key>
-	<string>YOUR_GOOGLE_MAPS_API_KEY</string>
-	
-	<!-- Background Modes -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>location</string>
-		<string>fetch</string>
-		<string>processing</string>
-	</array>
 </dict>
 </plist>

@@ -30,43 +30,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  provider: ^6.1.2
   supabase_flutter: ^2.8.0
+  sensors_plus: ^5.0.0
+  permission_handler: ^11.3.1
+  google_maps_flutter: ^2.8.0
+  geolocator: ^13.0.1
   shared_preferences: ^2.2.2
-  
-  # Localization
-  flutter_localizations:
-    sdk: flutter
-  intl: ^0.20.2
+  provider: ^6.1.1
+  image_picker: ^1.0.7
+  fl_chart: ^0.68.0
 
-  # Health & Fitness Integrations
-  # health: ^10.1.0  # Cross-platform health data (HealthKit & Google Fit) - Temporarily removed for build stability
-  
-  # Sensors
-  sensors_plus: ^4.0.2  # Accelerometer, Gyroscope, Magnetometer
-  pedometer: ^3.0.0  # Step counting
-  device_info_plus: ^10.1.0  # Device information
-  
-  # Permissions
-  permission_handler: ^11.3.0  # Handle all permissions
-  
-  # Location
-  geolocator: ^12.0.0  # GPS location
-  google_maps_flutter: ^2.9.0  # Google Maps for real-time maps
-  
-  # Camera & Media
-  image_picker: ^1.1.2  # Camera and photo library
-  camera: ^0.11.0+1  # Camera access
-  
-  # URL Launcher
-  url_launcher: ^6.3.1  # Open URLs, emails, phone calls
-  
-  # App Info
-  package_info_plus: ^8.1.0  # Get app version and build number
-  
-  # Background tasks
-  # workmanager: ^0.9.0  # Background processing - temporarily disabled due to build issues
-  
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -94,8 +67,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
